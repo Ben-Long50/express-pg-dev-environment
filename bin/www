@@ -8,7 +8,7 @@ import debug from 'debug';
 import http from 'http';
 import app from '../app.js';
 
-const debugLogger = debug('express-locallibrary-tutorial:server');
+const debugLogger = debug('PROJECT_NAME:server');
 
 /**
  * Get port from environment and store in Express.

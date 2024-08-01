@@ -4,22 +4,32 @@ import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import cors from 'cors';
-import expressLayouts from 'express-ejs-layouts';
-import indexRouter from './routes/index.js';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { fileURLToPath } from 'url';
+import userRouter from './routes/userRoutes.js';
 
 const app = express();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(import.meta.dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(helmet());
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
+});
+
+app.use(limiter);
 app.use(cors());
-app.use(expressLayouts);
-app.set('views', path.join(import.meta.dirname, 'views'));
-app.set('view engine', 'ejs');
-app.use('/', indexRouter);
+
+app.use('/', userRouter);
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
@@ -32,9 +42,12 @@ app.use((err, req, res, next) => {
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-  // render the error page
+  // Send JSON error response
   res.status(err.status || 500);
-  res.render('error');
+  res.json({
+    message: err.message,
+    error: req.app.get('env') === 'development' ? err : {},
+  });
 });
 
 export default app;
